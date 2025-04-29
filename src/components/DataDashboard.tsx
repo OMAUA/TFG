@@ -1,17 +1,40 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import { sensorStations, environmentalParameters, aggregateData, timeSeriesData } from "@/utils/mockData";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 
-const DataDashboard = () => {
+interface DataDashboardProps {
+    selectedStationId: string | null;
+    onStationChange?: (stationId: string) => void;
+}
+
+const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProps) => {
+    const [currentStationId, setCurrentStationId] = useState<string>("todas");
+
+    // Actualizar el estado cuando cambia el selectedStationId
+    useEffect(() => {
+        if (selectedStationId) {
+            setCurrentStationId(selectedStationId);
+        }
+    }, [selectedStationId]);
+
+    // Manejar cambios en la selección de la estación
+    const handleStationChange = (stationId: string) => {
+        // Actualizar el estado local
+        setCurrentStationId(stationId);
+        
+        // Actualizar el estado del componente padre
+        if (onStationChange) {
+            onStationChange(stationId);
+        }
+    };
 
     const getTrendIcon = (trend: number) => {
-
         if(trend > 0.1) return <ArrowUp className="text-eco-red h-4 w-4"/>;
         if(trend < -0.1) return <ArrowDown className="text-eco-green h-4 w-4"/>;
         return <Minus className="text-muted-foreground h-4 w-4"/>;
-
     };
   
     return (
@@ -19,7 +42,7 @@ const DataDashboard = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-semibold">Datos Ambientales</h2>
                 <div className="flex gap-4 items-center">
-                    <Select defaultValue="todas">
+                    <Select value={currentStationId} onValueChange={handleStationChange}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Estación"/>
                         </SelectTrigger>

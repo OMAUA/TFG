@@ -44,7 +44,11 @@ const STATION_COORDINATES: Record<number, L.LatLngTuple> = {
 
 };
 
-const MapView = () => {
+interface MapViewProps {
+    onViewStationDetails?: (stationId: number) => void;
+}
+
+const MapView = ({ onViewStationDetails }: MapViewProps) => {
 
     const [selectedParams, setSelectedParams] = useState<string[]>(['temperature', 'humidity']);
     const [activeStationId, setActiveStationId] = useState<number | null>(null);
@@ -159,6 +163,7 @@ const MapView = () => {
                 if(selectedParams.length === 0) {
                     const noParams = document.createElement('p');
                     noParams.className = 'text-muted-foreground italic';
+                    noParams.style.margin = '0';
                     noParams.textContent = 'Selecciona variables para ver datos';
                     dataContainer.appendChild(noParams);
                 } else {
@@ -184,11 +189,28 @@ const MapView = () => {
                 }
         
                 popupContent.appendChild(dataContainer);
+                
+                // Añadir enlace "Ver Más..."
+                const verMasLink = document.createElement('div');
+                verMasLink.className = 'text-center mt-2';
+                
+                const linkText = document.createElement('span');
+                linkText.className = 'text-primary text-xs inline-block cursor-pointer hover:underline';
+                linkText.textContent = 'Ver Más...';
+                linkText.addEventListener('click', () => {
+                    // Usar la función proporcionada por el componente padre para navegar
+                    if (onViewStationDetails) {
+                        onViewStationDetails(station.id);
+                    }
+                });
+                
+                verMasLink.appendChild(linkText);
+                popupContent.appendChild(verMasLink);
         
                 markersRef.current[activeStationId].bindPopup(popupContent).openPopup();
             }
         }
-    }, [activeStationId, selectedParams]);
+    }, [activeStationId, selectedParams, onViewStationDetails]);
 
     return (
         <div className="grid grid-cols-4 gap-6">

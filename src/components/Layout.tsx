@@ -8,6 +8,18 @@ import ForecastDashboard from "@/components/ForecastDashboard";
 const Layout = () => {
 
     const [activeTab, setActiveTab] = useState("map");
+    const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+
+    // Función para cambiar a la pestaña de datos y seleccionar una estación
+    const navigateToDataWithStation = (stationId: number) => {
+        setSelectedStationId(stationId.toString());
+        setActiveTab("data");
+    };
+    
+    // Función para actualizar el ID de la estación seleccionada
+    const handleStationChange = (stationId: string) => {
+        setSelectedStationId(stationId);
+    };
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -51,10 +63,13 @@ const Layout = () => {
                         </TabsList>
                     </div>
                     <TabsContent value="map" className="bg-white border rounded-lg shadow-sm p-4">
-                        <MapView />
+                        <MapView onViewStationDetails={navigateToDataWithStation} />
                     </TabsContent>
                     <TabsContent value="data" className="bg-white border rounded-lg shadow-sm p-4">
-                        <DataDashboard />
+                        <DataDashboard 
+                            selectedStationId={selectedStationId} 
+                            onStationChange={handleStationChange}
+                        />
                     </TabsContent>
                     <TabsContent value="forecast" className="bg-white border rounded-lg shadow-sm p-4">
                         <ForecastDashboard />

@@ -166,6 +166,20 @@
 
 }
 
+/* Estilo para el enlace "Ver Más..." */
+.sensor-popup-content > div:last-child {
+
+    border-top: 1px solid hsl(var(--border));
+    padding-top: 5px;
+
+}
+
+.sensor-popup-content span.text-primary {
+    
+    font-weight: 500;
+
+}
+
 /* Estilos específicos para el mapa rotado */
 .leaflet-marker-icon.sensor-station-label {
 
