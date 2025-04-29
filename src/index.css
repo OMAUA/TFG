@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    :root {
+
+        --background: 200 33% 98%;
+        --foreground: 200 15% 15%;
+        --card: 0 0% 100%;
+        --card-foreground: 200 15% 15%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 200 15% 15%;
+        --primary: 201 75% 50%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 160 64% 52%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 200 10% 92%;
+        --muted-foreground: 200 10% 40%;
+        --accent: 45 90% 50%;
+        --accent-foreground: 0 0% 10%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 200 15% 86%;
+        --input: 200 15% 86%;
+        --ring: 200 75% 60%;
+        --radius: 0.5rem;
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+
+    }
+
+}
+
+@layer base {
+
+    * {
+
+        @apply border-border;
+
+    }
+
+    body {
+
+        @apply bg-background text-foreground;
+
+    }
+
+}
+
+/* Estilos personalizados para el mapa */
+.sensor-station {
+
+    width: 20px;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 2px solid #3498DB;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: absolute;
+    transform: translate(-50%, -50%);
+
+}
+
+.sensor-station:hover {
+
+    transform: translate(-50%, -50%) scale(1.2);
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: #2ECC71;
+    z-index: 10;
+
+}
+
+.sensor-popup {
+
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    min-width: 200px;
+    transform: translateY(-100%) translateX(-50%);
+    margin-top: -10px;
+
+}
+
+/* Estilos para los marcadores de Leaflet */
+.sensor-station-marker {
+
+    background: transparent;
+    border: none;
+
+}
+
+.sensor-marker-inner {
+
+    width: 20px;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 2px solid #3498DB;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+
+}
+
+.sensor-station-marker:hover .sensor-marker-inner {
+
+    transform: scale(1.2);
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: #2ECC71;
+
+}
+
+.sensor-station-label {
+
+    background: transparent;
+    border: none;
+    width: auto !important;
+
+}
+
+.station-label {
+
+    padding: 2px 8px;
+    background-color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75rem;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+    display: inline-block;
+    transform: translateX(-50%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+
+}
+
+/* Estilo personalizado para los popups de Leaflet */
+.leaflet-popup-content-wrapper {
+
+    border-radius: 4px;
+    padding: 0;
+
+}
+
+.leaflet-popup-content {
+
+    margin: 0;
+    padding: 0;
+
+}
+
+.sensor-popup-content {
+
+    padding: 8px;
+    min-width: 200px;
+
+}
+
+/* Estilos específicos para el mapa rotado */
+.leaflet-marker-icon.sensor-station-label {
+
+    transform-origin: center bottom !important;
+    
+}
+
+/* Ocultar el botón de rotación de Leaflet */
+.leaflet-control-rotate {
+
+    display: none !important;
+
+}
+
+/* Ocultar el texto de atribución de Leaflet */
+.leaflet-control-attribution {
+
+    display: none !important;
+
+}
+
+/* Sobrescritura de clases específicas de Tailwind */
+.bg-muted\/50 {
+
+    background-color: transparent !important; /* Anulando el fondo con transparencia */
+
+}
+
+.h-10 {
+
+    height: auto !important; /* Anulando la altura fija */
+
+}
