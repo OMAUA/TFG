@@ -1,0 +1,169 @@
+{
+    "metadata": {
+        "fuente": "Proyecto Mastral",
+        "fecha_generacion": "02/07/2025 13:39",
+        "numero_estaciones": 20
+    },
+    "datos": [
+        {
+            "estacion": "Acequion - Torrevieja",
+            "latitud": "37.979987",
+            "longitud": "-0.688619",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "11.3"
+        },
+        {
+            "estacion": "Patricio Perez - Torrevieja",
+            "latitud": "37.977346",
+            "longitud": "-0.684409",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "5.1"
+        },
+        {
+            "estacion": "Centro - Torrevieja",
+            "latitud": "37.9758601",
+            "longitud": "-0.6824636",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "7.6"
+        },
+        {
+            "estacion": "Aguas Nuevas - Torrevieja",
+            "latitud": "37.998341",
+            "longitud": "-0.664749",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "11.0"
+        },
+        {
+            "estacion": "La Mata - Parque",
+            "latitud": "38.0240018",
+            "longitud": "-0.6587566",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "6"
+        },
+        {
+            "estacion": "Salinas - Torrevieja",
+            "latitud": "37.978448",
+            "longitud": "-0.702041",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "13"
+        },
+        {
+            "estacion": "Los Montesinos - Montesinos",
+            "latitud": "38.021563",
+            "longitud": "0.741981",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "11"
+        },
+        {
+            "estacion": "Los Balcones - Lago Jardin",
+            "latitud": "37.972816",
+            "longitud": "-0.728702",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "12.9"
+        },
+        {
+            "estacion": "Romualdo Ballester - Torrevieja",
+            "latitud": "37.955111",
+            "longitud": "-0.717841",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "16"
+        },
+        {
+            "estacion": "IESTorrevigia - Torrevieja",
+            "latitud": "37.998659",
+            "longitud": "-0.695838",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "11"
+        },
+        {
+            "estacion": "San Miguel de Salinas",
+            "latitud": "37.9872061",
+            "longitud": "-0.7673557",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "8.0"
+        },
+        {
+            "estacion": "Marina Salinas - Torrevieja",
+            "latitud": "37.969785",
+            "longitud": "-0.680555",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "8"
+        },
+        {
+            "estacion": "Salinas Isla - Torrevieja - Torrevieja",
+            "latitud": "37.991396",
+            "longitud": "-0.720184",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "19"
+        },
+        {
+            "estacion": "Colegio Salvador Ruso - Torrevieja",
+            "latitud": "37.985066",
+            "longitud": "-0.672346",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "16.1"
+        },
+        {
+            "estacion": "San Luis - Torrevieja",
+            "latitud": "38.024264",
+            "longitud": "-0.697408",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "10"
+        },
+        {
+            "estacion": "Europeos - La Mata",
+            "latitud": "38.017269",
+            "longitud": "-0.653988",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "11"
+        },
+        {
+            "estacion": "El Raso - Rojales",
+            "latitud": "38.054724",
+            "longitud": "-0.696401",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "13"
+        },
+        {
+            "estacion": "Playa de los Locos - Torrevieja",
+            "latitud": "37.9848708",
+            "longitud": "-0.6587313",
+            "fecha": "02/07/2025",
+            "hora": "13:35",
+            "velocidad_viento": "4.8"
+        },
+        {
+            "estacion": "Plaza Waldo calero- Torrevieja",
+            "latitud": "37.9760295",
+            "longitud": "-0.6807944",
+            "fecha": "02/07/2025",
+            "hora": "13:32",
+            "velocidad_viento": "7.9"
+        },
+        {
+            "estacion": "Restaurante Nautilus- Torrevieja",
+            "latitud": "37.9468063",
+            "longitud": "-0.7049459",
+            "fecha": "02/07/2025",
+            "hora": "13:34",
+            "velocidad_viento": "16.9"
+        }
+    ]
+}
