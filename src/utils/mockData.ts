@@ -208,7 +208,8 @@ export const environmentalParameters = [
     { id: 'pH', name: 'pH', unit: '', category: 'Agua' },
     { id: 'dissolvedOxygen', name: 'Oxígeno Disuelto', unit: 'mg/L', category: 'Agua' },
     { id: 'turbidity', name: 'Turbidez', unit: 'NTU', category: 'Agua' },
-    { id: 'algaeConcentration', name: 'Concentración de Algas', unit: 'µg/L', category: 'Biología' }
+    { id: 'algaeConcentration', name: 'Concentración de Algas', unit: 'µg/L', category: 'Biología' },
+    { id: 'velocidad_viento', name: 'Velocidad del Viento', unit: 'km/h', category: 'Clima' },
 
 ];
 

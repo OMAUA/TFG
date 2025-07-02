@@ -6,6 +6,8 @@ import { sensorStations, environmentalParameters } from "@/utils/mockData";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
+import { useEstaciones } from "@/hooks/useEstaciones";
+import { Switch } from "@/components/ui/switch";
 
 // Extender la interfaz de opciones de Leaflet para incluir las opciones de rotación
 declare module 'leaflet' {
@@ -44,17 +46,44 @@ const STATION_COORDINATES: Record<number, L.LatLngTuple> = {
 
 };
 
+// Lista fija de variables agrupadas por categoría
+const FIXED_VARIABLE_GROUPS = [
+  {
+    category: 'Clima',
+    variables: [
+      { id: 'temperatura', name: 'Temperatura', unit: '°C' },
+      { id: 'humedad', name: 'Humedad', unit: '%' },
+      { id: 'presion', name: 'Presión', unit: 'hPa' },
+      { id: 'puntoderocio', name: 'Punto de rocío', unit: '°C' },
+    ]
+  },
+  {
+    category: 'Viento',
+    variables: [
+      { id: 'velocidadviento', name: 'Velocidad del viento', unit: 'km/h' },
+      { id: 'direccionviento', name: 'Dirección del viento', unit: '' },
+    ]
+  },
+  {
+    category: 'Precipitación',
+    variables: [
+      { id: 'lluvia', name: 'Lluvia', unit: 'mm' },
+      { id: 'intensidadlluvia', name: 'Intensidad de lluvia', unit: 'mm/h' },
+    ]
+  }
+];
+
 interface MapViewProps {
     onViewStationDetails?: (stationId: number) => void;
 }
 
 const MapView = ({ onViewStationDetails }: MapViewProps) => {
-
-    const [selectedParams, setSelectedParams] = useState<string[]>(['temperature', 'humidity']);
-    const [activeStationId, setActiveStationId] = useState<number | null>(null);
+    const { data, loading, error } = useEstaciones();
+    const [selectedParams, setSelectedParams] = useState<string[]>(FIXED_VARIABLE_GROUPS.flatMap(g => g.variables.map(v => v.id)));
+    const [activeStationId, setActiveStationId] = useState<string | null>(null);
     const mapRef = useRef<L.Map | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
-    const markersRef = useRef<{[key: number]: L.Marker}>({});
+    const markersRef = useRef<{[key: string]: L.Marker}>({});
 
     const handleParamToggle = (paramId: string) => {
         if(selectedParams.includes(paramId)) {
@@ -64,10 +93,7 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
         }
     };
 
-    const handleStationClick = (stationId: number) => {
-        setActiveStationId(activeStationId === stationId ? null : stationId);
-    };
-
+    // Agrupar parámetros por categoría (mockData)
     const parametersByCategory = environmentalParameters.reduce((acc, param) => {
         if(!acc[param.category]) {
             acc[param.category] = [];
@@ -76,25 +102,26 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
         return acc;
     }, {} as Record<string, typeof environmentalParameters>);
 
+    const handleStationClick = (stationName: string) => {
+        setActiveStationId(activeStationId === stationName ? null : stationName);
+    };
+
     // Inicializar el mapa cuando el componente se monta
     useEffect(() => {
-        if(mapContainerRef.current && !mapRef.current) {
-            // Inicializar el mapa con rotación inicial de 55 grados
+        if (mapContainerRef.current && !mapRef.current && data) {
             mapRef.current = L.map(mapContainerRef.current, {
                 rotate: true,
                 bearing: INITIAL_ROTATION,
-                touchRotate: false, // Desactivar rotación táctil para evitar cambios accidentales
-                rotateControl: false, // Desactivar el control de rotación que aparece junto a los controles de zoom
-                attributionControl: false // Eliminar el texto de atribución
+                touchRotate: false,
+                rotateControl: false,
+                attributionControl: false
             }).setView(MAP_CENTER, DEFAULT_ZOOM);
 
-            // Añadir capa satelital (Esri World Imagery)
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '', // Dejar la atribución vacía
+                attribution: '',
                 maxZoom: 19,
             }).addTo(mapRef.current);
 
-            // Creamos un icono personalizado para los marcadores
             const sensorIcon = L.divIcon({
                 className: 'sensor-station-marker',
                 iconSize: [20, 20],
@@ -102,64 +129,56 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
                 html: '<div class="sensor-marker-inner"></div>'
             });
 
-            // Añadir marcadores para cada estación
-            sensorStations.forEach(station => {
-                const coordinates = STATION_COORDINATES[station.id as keyof typeof STATION_COORDINATES];
-                if(coordinates) {
-                    const marker = L.marker(coordinates, { icon: sensorIcon })
+            data.datos.forEach((station) => {
+                const lat = parseFloat(station.latitud);
+                const lng = parseFloat(station.longitud);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const marker = L.marker([lat, lng], { icon: sensorIcon })
                         .addTo(mapRef.current!)
                         .on('click', () => {
-                            handleStationClick(station.id);
-                    });
-          
-                    // Añadimos una etiqueta permanente
-                    L.marker(coordinates, {
+                            handleStationClick(station.estacion);
+                        });
+
+                    // Etiqueta con el nombre de la estación
+                    L.marker([lat, lng], {
                         icon: L.divIcon({
                             className: 'sensor-station-label',
-                            html: `<div class="station-label">${station.name}</div>`,
-                            iconSize: [0, 0], // Tamaño 0 para que se adapte al contenido
-                            iconAnchor: [0, -15] // Ajustamos para que esté más abajo (aumentamos la distancia negativa)
+                            html: `<div class="station-label">${station.estacion}</div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, -15]
                         })
                     }).addTo(mapRef.current!);
-                    
-                    markersRef.current[station.id] = marker;
+
+                    markersRef.current[station.estacion] = marker;
                 }
             });
         }
-
         return () => {
-            // Limpiar el mapa cuando el componente se desmonta
-            if(mapRef.current) {
+            if (mapRef.current) {
                 mapRef.current.remove();
                 mapRef.current = null;
             }
         };
-    }, []);
+    }, [data]);
 
-    // Actualizar popups cuando cambia el activeStationId
+    // Actualizar popups cuando cambia la estación activa
     useEffect(() => {
-        if(!mapRef.current) return;
-
-        // Cerrar todos los popups
-        Object.values(markersRef.current).forEach(marker => {
-            marker.closePopup();
-        });
-
-        // Abrir el popup para la estación activa
-        if(activeStationId !== null && markersRef.current[activeStationId]) {
-            const station = sensorStations.find(s => s.id === activeStationId);
-            if(station) {
+        if (!mapRef.current || !data) return;
+        Object.values(markersRef.current).forEach(marker => marker.closePopup());
+        if (activeStationId && markersRef.current[activeStationId]) {
+            const station = data.datos.find(s => s.estacion === activeStationId);
+            if (station) {
                 const popupContent = document.createElement('div');
                 popupContent.className = 'sensor-popup-content';
-        
+                popupContent.style.width = '250px';
+                // Título en bloque
                 const title = document.createElement('h3');
                 title.className = 'text-sm font-medium border-b pb-1 mb-2';
-                title.textContent = `Estación ${station.name}`;
+                title.textContent = `${station.estacion}`;
                 popupContent.appendChild(title);
-        
+                // Contenedor de datos
                 const dataContainer = document.createElement('div');
-                dataContainer.className = 'text-xs space-y-1';
-        
+                dataContainer.className = 'text-xs space-y-2';
                 if(selectedParams.length === 0) {
                     const noParams = document.createElement('p');
                     noParams.className = 'text-muted-foreground italic';
@@ -167,50 +186,62 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
                     noParams.textContent = 'Selecciona variables para ver datos';
                     dataContainer.appendChild(noParams);
                 } else {
-                    selectedParams.forEach(paramId => {
-                        const param = environmentalParameters.find(p => p.id === paramId);
-                        if(!param) return;
-            
-                        const paramRow = document.createElement('div');
-                        paramRow.className = 'grid grid-cols-2';
-            
-                        const paramName = document.createElement('span');
-                        paramName.className = 'text-muted-foreground';
-                        paramName.textContent = `${param.name}:`;
-            
-                        const paramValue = document.createElement('span');
-                        paramValue.className = 'font-medium text-right';
-                        paramValue.textContent = `${station.data[paramId as keyof typeof station.data]} ${param.unit}`;
-            
-                        paramRow.appendChild(paramName);
-                        paramRow.appendChild(paramValue);
-                        dataContainer.appendChild(paramRow);
+                    FIXED_VARIABLE_GROUPS.forEach(group => {
+                        const groupSelected = group.variables.filter(param => selectedParams.includes(param.id));
+                        if (groupSelected.length > 0) {
+                            // Título de la categoría
+                            const groupTitle = document.createElement('div');
+                            groupTitle.className = 'font-semibold text-[0.95em] text-muted-foreground border-b mb-1';
+                            groupTitle.textContent = group.category;
+                            dataContainer.appendChild(groupTitle);
+                            // Variables del grupo
+                            groupSelected.forEach(param => {
+                                const value = station.actuales && station.actuales[param.id] !== undefined && station.actuales[param.id] !== null
+                                    ? station.actuales[param.id]
+                                    : '-';
+                                const paramRow = document.createElement('div');
+                                paramRow.className = 'grid grid-cols-2';
+                                const paramName = document.createElement('span');
+                                paramName.className = 'text-muted-foreground';
+                                paramName.textContent = `${param.name}:`;
+                                const paramValue = document.createElement('span');
+                                paramValue.className = 'font-medium text-right';
+                                paramValue.textContent = `${value} ${param.unit ? param.unit : ''}`.trim();
+                                paramRow.appendChild(paramName);
+                                paramRow.appendChild(paramValue);
+                                dataContainer.appendChild(paramRow);
+                            });
+                        }
                     });
                 }
-        
                 popupContent.appendChild(dataContainer);
-                
-                // Añadir enlace "Ver Más..."
+                // Enlace "Ver Más..."
                 const verMasLink = document.createElement('div');
                 verMasLink.className = 'text-center mt-2';
-                
                 const linkText = document.createElement('span');
                 linkText.className = 'text-primary text-xs inline-block cursor-pointer hover:underline';
                 linkText.textContent = 'Ver Más...';
                 linkText.addEventListener('click', () => {
-                    // Usar la función proporcionada por el componente padre para navegar
                     if (onViewStationDetails) {
-                        onViewStationDetails(station.id);
+                        onViewStationDetails(station.estacion);
                     }
                 });
-                
                 verMasLink.appendChild(linkText);
                 popupContent.appendChild(verMasLink);
-        
                 markersRef.current[activeStationId].bindPopup(popupContent).openPopup();
             }
         }
-    }, [activeStationId, selectedParams, onViewStationDetails]);
+    }, [activeStationId, selectedParams, data, onViewStationDetails]);
+
+    const allParamIds = FIXED_VARIABLE_GROUPS.flatMap(g => g.variables.map(v => v.id));
+    const allSelected = selectedParams.length === allParamIds.length;
+    const handleToggleAll = (checked: boolean) => {
+        setSelectedParams(checked ? allParamIds : []);
+    };
+
+    if (loading) return <div>Cargando mapa...</div>;
+    if (error) return <div>Error al cargar datos: {error}</div>;
+    if (!data) return <div>No hay datos de estaciones disponibles.</div>;
 
     return (
         <div className="grid grid-cols-4 gap-6">
@@ -218,25 +249,29 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
             <Card className="col-span-1">
                 <CardContent className="p-4">
                     <h3 className="text-lg font-medium mb-4">Variables Ambientales</h3>
+                    <div className="flex items-center mb-4 gap-2">
+                        <Switch id="toggle-all" checked={allSelected} onCheckedChange={handleToggleAll} />
+                        <Label htmlFor="toggle-all" className="text-sm cursor-pointer">Seleccionar todas</Label>
+                    </div>
                     <div className="space-y-4">
-                        {Object.entries(parametersByCategory).map(([category, params]) => (
-                            <div key={category} className="space-y-2">
-                                <h4 className="text-sm font-medium text-muted-foreground">{category}</h4>
-                                <div className="space-y-1.5">
-                                    {params.map(param => (
-                                        <div key={param.id} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={param.id} 
-                                                checked={selectedParams.includes(param.id)}
-                                                onCheckedChange={() => handleParamToggle(param.id)}
-                                            />
-                                            <Label htmlFor={param.id} className="text-sm cursor-pointer">
-                                                {param.name} {param.unit ? `(${param.unit})` : ''}
-                                            </Label>
-                                        </div>
-                                    ))}
+                        {FIXED_VARIABLE_GROUPS.map(group => (
+                          <div key={group.category} className="space-y-2">
+                            <h4 className="text-sm font-medium text-muted-foreground">{group.category}</h4>
+                            <div className="space-y-1.5">
+                              {group.variables.map(param => (
+                                <div key={param.id} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={param.id} 
+                                    checked={selectedParams.includes(param.id)}
+                                    onCheckedChange={() => handleParamToggle(param.id)}
+                                  />
+                                  <Label htmlFor={param.id} className="text-sm cursor-pointer">
+                                    {param.name} {param.unit ? `(${param.unit})` : ''}
+                                  </Label>
                                 </div>
+                              ))}
                             </div>
+                          </div>
                         ))}
                     </div>
                 </CardContent>

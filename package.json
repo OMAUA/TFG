@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "actualizar-datos": "node scripts/actualizar_datos.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
