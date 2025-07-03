@@ -17,6 +17,14 @@ const destino = path.join(__dirname, "..", "public", "datos_meteorologicos.json"
 if (fs.existsSync(origen)) {
     fs.copyFileSync(origen, destino);
     console.log("✅ Archivo datos_meteorologicos.json movido a /public");
+    // Copiar también a dist/ si existe
+    const destinoDist = path.join(__dirname, "..", "dist", "datos_meteorologicos.json");
+    if (fs.existsSync(path.join(__dirname, "..", "dist"))) {
+        fs.copyFileSync(destino, destinoDist);
+        console.log("✅ Archivo datos_meteorologicos.json movido a /dist");
+    } else {
+        console.warn("⚠️ La carpeta dist/ no existe. No se copió el JSON a dist/");
+    }
     fs.unlinkSync(origen);
 } else {
     console.error("❌ No se encontró datos_meteorologicos.json en scripts/");
