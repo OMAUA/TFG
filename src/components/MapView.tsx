@@ -10,6 +10,7 @@ import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useEstaciones } from "@/hooks/useEstaciones";
 import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
 
 // Extender la interfaz de opciones de Leaflet para incluir las opciones de rotación
 declare module 'leaflet' {
@@ -96,6 +97,7 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const markersRef = useRef<{[key: string]: L.Marker}>({});
     const labelMarkersRef = useRef<{[key: string]: L.Marker}>({});
+    const navigate = useNavigate();
 
     const handleParamToggle = (paramId: string) => {
         if(selectedParams.includes(paramId)) {
@@ -202,6 +204,7 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
         Object.values(markersRef.current).forEach(marker => marker.closePopup());
         if (activeStationId && markersRef.current[activeStationId]) {
             const station = data.datos.find(s => s.estacion === activeStationId);
+            const stationIndex = data.datos.findIndex(s => s.estacion === activeStationId);
             if (station) {
                 const popupContent = document.createElement('div');
                 popupContent.className = 'sensor-popup-content';
@@ -257,9 +260,8 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
                 linkText.className = 'text-primary text-xs inline-block cursor-pointer hover:underline';
                 linkText.textContent = 'Ver Más...';
                 linkText.addEventListener('click', () => {
-                    if (onViewStationDetails) {
-                        // Si station.estacion no es numérico, revisar la estructura de datos
-                        onViewStationDetails(Number(station.estacion));
+                    if (onViewStationDetails && stationIndex !== -1) {
+                        onViewStationDetails(stationIndex);
                     }
                 });
                 verMasLink.appendChild(linkText);
@@ -279,50 +281,61 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
     if (error) return <div>Error al cargar datos: {error}</div>;
     if (!data) return <div>No hay datos de estaciones disponibles.</div>;
 
+    // Fecha de última actualización
+    const ultimaActualizacion = data.metadata?.fecha_generacion || new Date().toLocaleString('es-ES');
+
     return (
-        <div className="grid grid-cols-4 gap-6">
-            {/* Barra lateral de selección de parámetros */}
-            <Card className="col-span-1">
-                <CardContent className="p-4">
-                    <h3 className="text-lg font-medium mb-4">Variables Ambientales</h3>
-                    <div className="flex items-center mb-4 gap-2">
-                        <Switch id="toggle-all" checked={allSelected} onCheckedChange={handleToggleAll} />
-                        <Label htmlFor="toggle-all" className="text-sm cursor-pointer">Seleccionar todas</Label>
-                    </div>
-                    <div className="space-y-4">
-                        {FIXED_VARIABLE_GROUPS.map(group => (
-                          <div key={group.category} className="space-y-2">
-                            <h4 className="text-sm font-medium text-muted-foreground">{group.category}</h4>
-                            <div className="space-y-1.5">
-                              {group.variables.map(param => (
-                                <div key={param.id} className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={param.id} 
-                                    checked={selectedParams.includes(param.id)}
-                                    onCheckedChange={() => handleParamToggle(param.id)}
-                                  />
-                                  <Label htmlFor={param.id} className="text-sm cursor-pointer">
-                                    {param.name} {param.unit ? `(${param.unit})` : ''}
-                                  </Label>
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Mapa de Estaciones</h2>
+                <span className="text-sm text-muted-foreground">
+                    Última actualización: {ultimaActualizacion}
+                </span>
+            </div>
+            <div className="grid grid-cols-4 gap-6">
+                {/* Barra lateral de selección de parámetros */}
+                <Card className="col-span-1">
+                    <CardContent className="p-4">
+                        <h3 className="text-lg font-medium mb-4">Variables Ambientales</h3>
+                        <div className="flex items-center mb-4 gap-2">
+                            <Switch id="toggle-all" checked={allSelected} onCheckedChange={handleToggleAll} />
+                            <Label htmlFor="toggle-all" className="text-sm cursor-pointer">Seleccionar todas</Label>
+                        </div>
+                        <div className="space-y-4">
+                            {FIXED_VARIABLE_GROUPS.map(group => (
+                              <div key={group.category} className="space-y-2">
+                                <h4 className="text-sm font-medium text-muted-foreground">{group.category}</h4>
+                                <div className="space-y-1.5">
+                                  {group.variables.map(param => (
+                                    <div key={param.id} className="flex items-center space-x-2">
+                                      <Checkbox 
+                                        id={param.id} 
+                                        checked={selectedParams.includes(param.id)}
+                                        onCheckedChange={() => handleParamToggle(param.id)}
+                                      />
+                                      <Label htmlFor={param.id} className="text-sm cursor-pointer">
+                                        {param.name} {param.unit ? `(${param.unit})` : ''}
+                                      </Label>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+                {/* Visualización del mapa */}
+                <div className="col-span-3 relative">
+                    <div className="w-full h-[600px] relative rounded-lg overflow-hidden border">
+                        {/* Contenedor del mapa Leaflet */}
+                        <div ref={mapContainerRef} className="w-full h-full"></div>
+                        {/* Leyenda del mapa */}
+                        <div className="absolute bottom-3 right-3 bg-white/90 p-2 rounded text-xs z-[1000]">
+                            <div className="font-medium mb-1">Leyenda</div>
+                            <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded-full bg-white border-2 border-eco-blue"></div>
+                                <span>Estación de Monitorización</span>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-            {/* Visualización del mapa */}
-            <div className="col-span-3 relative">
-                <div className="w-full h-[600px] relative rounded-lg overflow-hidden border">
-                    {/* Contenedor del mapa Leaflet */}
-                    <div ref={mapContainerRef} className="w-full h-full"></div>
-                    {/* Leyenda del mapa */}
-                    <div className="absolute bottom-3 right-3 bg-white/90 p-2 rounded text-xs z-[1000]">
-                        <div className="font-medium mb-1">Leyenda</div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-white border-2 border-eco-blue"></div>
-                            <span>Estación de Monitorización</span>
                         </div>
                     </div>
                 </div>
