@@ -6,6 +6,8 @@ import { sensorStations, environmentalParameters } from "@/utils/mockData";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useEstaciones } from "@/hooks/useEstaciones";
 import { Switch } from "@/components/ui/switch";
 
@@ -24,12 +26,21 @@ declare module 'leaflet' {
         setBearing(bearing: number): this;
     }
 
+    // Declaración global mínima para evitar error de tipo con markerClusterGroup
+    interface MarkerClusterGroup extends L.Layer {
+        addLayer(layer: L.Layer): this;
+        hasLayer(layer: L.Layer): boolean;
+        fire(type: string): this;
+    }
+
+    function markerClusterGroup(options?: unknown): MarkerClusterGroup;
+
 }
 
 // Coordenadas reales de la Laguna de Torrevieja
 const MAP_CENTER: L.LatLngTuple = [38.0, -0.7]; // Latitud, Longitud
-const DEFAULT_ZOOM = 13;                        // Zoom inicial del mapa
-const INITIAL_ROTATION = 55;                    // Rotación inicial en grados
+const DEFAULT_ZOOM = 12;                        // Zoom inicial del mapa
+// const INITIAL_ROTATION = 55;                 // Rotación inicial en grados
 
 // Mapeo de estaciones a coordenadas geográficas reales
 // Estas coordenadas son aproximadas basadas en la ubicación relativa de las estaciones en el mapa original
@@ -84,6 +95,7 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
     const mapRef = useRef<L.Map | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const markersRef = useRef<{[key: string]: L.Marker}>({});
+    const labelMarkersRef = useRef<{[key: string]: L.Marker}>({});
 
     const handleParamToggle = (paramId: string) => {
         if(selectedParams.includes(paramId)) {
@@ -102,18 +114,17 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
         return acc;
     }, {} as Record<string, typeof environmentalParameters>);
 
-    const handleStationClick = (stationName: string) => {
-        setActiveStationId(activeStationId === stationName ? null : stationName);
-    };
-
-    // Inicializar el mapa cuando el componente se monta
     useEffect(() => {
+        const handleStationClick = (stationName: string) => {
+            setActiveStationId(prev => prev === stationName ? null : stationName);
+        };
+
         if (mapContainerRef.current && !mapRef.current && data) {
             mapRef.current = L.map(mapContainerRef.current, {
-                rotate: true,
-                bearing: INITIAL_ROTATION,
-                touchRotate: false,
-                rotateControl: false,
+                // rotate: true,
+                // bearing: INITIAL_ROTATION,
+                // touchRotate: false,
+                // rotateControl: false,
                 attributionControl: false
             }).setView(MAP_CENTER, DEFAULT_ZOOM);
 
@@ -129,29 +140,53 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
                 html: '<div class="sensor-marker-inner"></div>'
             });
 
+            // Crear grupo de clústeres
+            const markerClusterGroup = L.markerClusterGroup();
+
             data.datos.forEach((station) => {
                 const lat = parseFloat(station.latitud);
                 const lng = parseFloat(station.longitud);
                 if (!isNaN(lat) && !isNaN(lng)) {
                     const marker = L.marker([lat, lng], { icon: sensorIcon })
-                        .addTo(mapRef.current!)
                         .on('click', () => {
                             handleStationClick(station.estacion);
                         });
 
                     // Etiqueta con el nombre de la estación
-                    L.marker([lat, lng], {
+                    const labelMarker = L.marker([lat, lng], {
                         icon: L.divIcon({
                             className: 'sensor-station-label',
                             html: `<div class="station-label">${station.estacion}</div>`,
                             iconSize: [0, 0],
                             iconAnchor: [0, -15]
                         })
-                    }).addTo(mapRef.current!);
+                    });
+                    labelMarker.addTo(mapRef.current!);
 
                     markersRef.current[station.estacion] = marker;
+                    labelMarkersRef.current[station.estacion] = labelMarker;
+                    markerClusterGroup.addLayer(marker);
                 }
             });
+
+            // Añadir el grupo de clústeres al mapa
+            markerClusterGroup.addTo(mapRef.current);
+
+            // Ocultar etiquetas cuando los marcadores estén agrupados
+            markerClusterGroup.on('animationend clusterclick spiderfied unspiderfied', () => {
+                Object.entries(markersRef.current).forEach(([station, marker]) => {
+                    const labelMarker = labelMarkersRef.current[station];
+                    if (!labelMarker) return;
+                    // Si el marcador está agrupado, ocultar la etiqueta
+                    if (markerClusterGroup.hasLayer(marker) && !mapRef.current!.hasLayer(marker)) {
+                        mapRef.current!.removeLayer(labelMarker);
+                    } else {
+                        mapRef.current!.addLayer(labelMarker);
+                    }
+                });
+            });
+            // Llamar una vez al cargar
+            markerClusterGroup.fire('animationend');
         }
         return () => {
             if (mapRef.current) {
@@ -223,7 +258,8 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
                 linkText.textContent = 'Ver Más...';
                 linkText.addEventListener('click', () => {
                     if (onViewStationDetails) {
-                        onViewStationDetails(station.estacion);
+                        // Si station.estacion no es numérico, revisar la estructura de datos
+                        onViewStationDetails(Number(station.estacion));
                     }
                 });
                 verMasLink.appendChild(linkText);
