@@ -560,7 +560,7 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                 </Card>
                 <Card>
                     <CardHeader>
-                            <CardTitle className="text-base">Distribución de direcciones del viento</CardTitle>
+                            <CardTitle className="text-base">Distribución de direcciones del viento (valores actuales)</CardTitle>
                     </CardHeader>
                     <CardContent>
                             <div className="h-[350px] flex items-center justify-center">
