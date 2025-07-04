@@ -54,11 +54,10 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
 
     // Variables para el gráfico unificado de extremos
     const extremosVariables = [
-        { id: 'temperatura', label: 'Temperatura', unit: '°C', color1: '#E74C3C', color2: '#8E44AD' },
-        { id: 'humedad', label: 'Humedad', unit: '%', color1: '#3498DB', color2: '#1F618D' },
-        { id: 'presion', label: 'Presión', unit: 'hPa', color1: '#7D3C98', color2: '#1ABC9C' },
-        { id: 'rachaViento', label: 'Velocidad máxima del viento', unit: 'km/h', color1: '#F1C40F', color2: '#B7950B' },
-        { id: 'lluvia', label: 'Lluvia', unit: 'mm', color1: '#2874A6', color2: '#85C1E9' },
+        { id: 'temperatura', label: 'Temperatura', unit: '°C', color1: '#E74C3C', color2: '#8E44AD', color3: '#F7B731' },
+        { id: 'humedad', label: 'Humedad', unit: '%', color1: '#3498DB', color2: '#1F618D', color3: '#A3CBF5' },
+        { id: 'presion', label: 'Presión', unit: 'hPa', color1: '#7D3C98', color2: '#1ABC9C', color3: '#F5CD79' },
+        { id: 'puntoderocio', label: 'Punto de rocío', unit: '°C', color1: '#8E44AD', color2: '#E17055', color3: '#00B894' },
     ];
     const [extremosVar, setExtremosVar] = useState('temperatura');
     const extremosVarObj = extremosVariables.find(v => v.id === extremosVar) || extremosVariables[0];
@@ -86,10 +85,19 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
         { id: 'temperatura', label: 'Temperatura', unit: '°C', color: '#E74C3C' },
         { id: 'humedad', label: 'Humedad', unit: '%', color: '#3498DB' },
         { id: 'presion', label: 'Presión', unit: 'hPa', color: '#F1C40F' },
-        { id: 'viento', label: 'Velocidad del viento', unit: 'km/h', color: '#8E44AD' },
+        { id: 'puntoderocio', label: 'Punto de rocío', unit: '°C', color: '#8E44AD' },
+        { id: 'velocidadviento', label: 'Velocidad del viento', unit: 'km/h', color: '#1ABC9C' },
+        { id: 'lluvia', label: 'Lluvia', unit: 'mm', color: '#2874A6' },
+        { id: 'intensidadlluvia', label: 'Intensidad de lluvia', unit: 'mm/h', color: '#2ECC71' },
     ];
     const [comparativaVar, setComparativaVar] = useState('temperatura');
     const comparativaVarObj = comparativaVariables.find(v => v.id === comparativaVar) || comparativaVariables[0];
+
+    // Usar dos estados distintos para los selects de mínimos y máximos
+    const [extremosVarMin, setExtremosVarMin] = useState('temperatura');
+    const [extremosVarMax, setExtremosVarMax] = useState('temperatura');
+    const extremosVarMinObj = extremosVariables.find(v => v.id === extremosVarMin) || extremosVariables[0];
+    const extremosVarMaxObj = extremosVariables.find(v => v.id === extremosVarMax) || extremosVariables[0];
 
     // Cargar datos reales
     useEffect(() => {
@@ -184,9 +192,10 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
             temperatura: parseFloat(est.actuales.temperatura?.replace(",", ".")),
             humedad: parseFloat(est.actuales.humedad?.replace(",", ".")),
             presion: parseFloat(est.actuales.presion?.replace(",", ".")),
-            viento: parseFloat(est.actuales.velocidadviento?.replace(",", ".")),
-            salinidad: parseFloat(est.actuales.salinity?.replace(",", ".")), // Si existe
-            turbidez: parseFloat(est.actuales.turbidity?.replace(",", ".")), // Si existe
+            puntoderocio: parseFloat(est.actuales.puntoderocio?.replace(",", ".")),
+            velocidadviento: parseFloat(est.actuales.velocidadviento?.replace(",", ".")),
+            lluvia: parseFloat(est.actuales.lluvia?.replace(",", ".")),
+            intensidadlluvia: parseFloat(est.actuales.intensidadlluvia?.replace(",", ".")),
         }));
     }
 
@@ -197,18 +206,38 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
     };
 
     // Extraer datos de extremos mensuales/anuales para todas las estaciones
-    function getExtremosMensualesAnuales(variable: string) {
+    function getExtremosMaximosMensualesAnuales(variable: string) {
         if (!data) return [];
+        const map = {
+            temperatura: { max: 'temperaturamaxima' },
+            humedad: { max: 'humedadmaxima' },
+            presion: { max: 'presionmaxima' },
+            puntoderocio: { max: 'puntoderociomaximo' },
+            velocidadviento: { max: 'rachaviento' },
+            lluvia: { max: 'lluvia' },
+            intensidadlluvia: { max: 'intensidadlluvia' },
+        };
+        const campos = map[variable] || { max: variable + 'maxima' };
         return data.datos.map(est => ({
             name: est.estacion,
-            maxMensual: est.mensuales && est.mensuales[`${variable}maxima`] ? parseFloat(est.mensuales[`${variable}maxima`].replace(",", ".")) : null,
-            maxMensualDia: est.mensuales && est.mensuales[`${variable}maximadia`] ? est.mensuales[`${variable}maximadia`] : null,
-            minMensual: est.mensuales && est.mensuales[`${variable}minima`] ? parseFloat(est.mensuales[`${variable}minima`].replace(",", ".")) : null,
-            minMensualDia: est.mensuales && est.mensuales[`${variable}minimadia`] ? est.mensuales[`${variable}minimadia`] : null,
-            maxAnual: est.anuales && est.anuales[`${variable}maxima`] ? parseFloat(est.anuales[`${variable}maxima`].replace(",", ".")) : null,
-            maxAnualDia: est.anuales && est.anuales[`${variable}maximadia`] ? est.anuales[`${variable}maximadia`] : null,
-            minAnual: est.anuales && est.anuales[`${variable}minima`] ? parseFloat(est.anuales[`${variable}minima`].replace(",", ".")) : null,
-            minAnualDia: est.anuales && est.anuales[`${variable}minimadia`] ? est.anuales[`${variable}minimadia`] : null,
+            maxMensual: est.mensuales && campos.max && est.mensuales[campos.max] ? parseFloat(est.mensuales[campos.max].replace(",", ".")) : null,
+            maxAnual: est.anuales && campos.max && est.anuales[campos.max] ? parseFloat(est.anuales[campos.max].replace(",", ".")) : null,
+        }));
+    }
+
+    function getExtremosMinimosMensualesAnuales(variable: string) {
+        if (!data) return [];
+        const map = {
+            temperatura: { min: 'temperaturaminima' },
+            humedad: { min: 'humedadminima' },
+            presion: { min: 'presionminima' },
+            puntoderocio: { min: 'puntoderociominimo' },
+        };
+        const campos = map[variable] || { min: variable + 'minima' };
+        return data.datos.map(est => ({
+            name: est.estacion,
+            minMensual: est.mensuales && campos.min && est.mensuales[campos.min] ? parseFloat(est.mensuales[campos.min].replace(",", ".")) : null,
+            minAnual: est.anuales && campos.min && est.anuales[campos.min] ? parseFloat(est.anuales[campos.min].replace(",", ".")) : null,
         }));
     }
 
@@ -268,6 +297,57 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
     }
     // --- FIN NUEVAS FUNCIONES ---
 
+    // 2. Funciones para obtener máximos y mínimos diarios/mensuales/anuales
+    function getExtremosMaximosDiariosMensualesAnuales(variable) {
+        if (!data) return [];
+        const map = {
+            temperatura: { max: 'temperaturamaxima' },
+            humedad: { max: 'humedadmaxima' },
+            presion: { max: 'presionmaxima' },
+            puntoderocio: { max: 'puntoderociomaximo' },
+        };
+        const campos = map[variable] || { max: variable + 'maxima' };
+        return data.datos.map(est => ({
+            name: est.estacion,
+            maxDiario: est.diarios && campos.max && est.diarios[campos.max] ? parseFloat(est.diarios[campos.max].replace(",", ".")) : null,
+            maxMensual: est.mensuales && campos.max && est.mensuales[campos.max] ? parseFloat(est.mensuales[campos.max].replace(",", ".")) : null,
+            maxAnual: est.anuales && campos.max && est.anuales[campos.max] ? parseFloat(est.anuales[campos.max].replace(",", ".")) : null,
+        }));
+    }
+    function getExtremosMinimosDiariosMensualesAnuales(variable) {
+        if (!data) return [];
+        const map = {
+            temperatura: { min: 'temperaturaminima' },
+            humedad: { min: 'humedadminima' },
+            presion: { min: 'presionminima' },
+            puntoderocio: { min: 'puntoderociominimo' },
+        };
+        const campos = map[variable] || { min: variable + 'minima' };
+        return data.datos.map(est => ({
+            name: est.estacion,
+            minDiario: est.diarios && campos.min && est.diarios[campos.min] ? parseFloat(est.diarios[campos.min].replace(",", ".")) : null,
+            minMensual: est.mensuales && campos.min && est.mensuales[campos.min] ? parseFloat(est.mensuales[campos.min].replace(",", ".")) : null,
+            minAnual: est.anuales && campos.min && est.anuales[campos.min] ? parseFloat(est.anuales[campos.min].replace(",", ".")) : null,
+        }));
+    }
+
+    // Función para obtener racha máxima anual de viento por estación
+    function getRachaMaximaAnual() {
+        if (!data) return [];
+        return data.datos.map(est => ({
+            name: est.estacion,
+            racha: est.anuales && est.anuales.rachaviento ? parseFloat(est.anuales.rachaviento.replace(",", ".")) : null,
+        }));
+    }
+    // Función para obtener acumulado de lluvia anual por estación
+    function getLluviaAcumuladaAnual() {
+        if (!data) return [];
+        return data.datos.map(est => ({
+            name: est.estacion,
+            lluvia: est.anuales && est.anuales.lluvia ? parseFloat(est.anuales.lluvia.replace(",", ".")) : null,
+        }));
+    }
+
     if (loading) return <div className="p-8 text-center">Cargando datos...</div>;
     if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
     if (!data) return <div className="p-8 text-center">No hay datos disponibles.</div>;
@@ -325,23 +405,58 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                         );
                     } else {
                         const paramData = getAggregates(param.id);
+                        // Si es una estación concreta, mostrar min/max diarios solo para los parámetros permitidos
+                        const showMinMax = !isGlobal && ['temperatura', 'humedad', 'presion', 'puntoderocio'].includes(param.id);
+                        let min = null, max = null;
+                        if (showMinMax && selectedStation && selectedStation.diarios) {
+                            switch(param.id) {
+                                case 'temperatura':
+                                    min = selectedStation.diarios.temperaturaminima;
+                                    max = selectedStation.diarios.temperaturamaxima;
+                                    break;
+                                case 'humedad':
+                                    min = selectedStation.diarios.humedadminima;
+                                    max = selectedStation.diarios.humedadmaxima;
+                                    break;
+                                case 'presion':
+                                    min = selectedStation.diarios.presionminima;
+                                    max = selectedStation.diarios.presionmaxima;
+                                    break;
+                                case 'puntoderocio':
+                                    min = selectedStation.diarios.puntoderociominimo;
+                                    max = selectedStation.diarios.puntoderociomaximo;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
                         return (
                             <Card key={param.id}>
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-base flex justify-between items-center">
                                         <span>{param.name}</span>
-                                        <div className="flex items-center text-sm font-normal">
-                                            {getTrendIcon(paramData.trend)}
-                                        </div>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-semibold">
-                                        {paramData.avg.toFixed(1)} {param.unit}
+                                        {param.id === 'presion'
+                                            ? paramData.avg.toFixed(2)
+                                            : param.id === 'humedad'
+                                                ? Math.round(paramData.avg)
+                                                : paramData.avg.toFixed(1)
+                                        } {param.unit}
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                        Min: {paramData.min} {param.unit} | Max: {paramData.max} {param.unit}
-                                    </div>
+                                    {isGlobal ? (
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            Min: {param.id === 'presion' ? paramData.min.toFixed(2) : param.id === 'humedad' ? Math.round(paramData.min) : paramData.min.toFixed(1)} {param.unit} | Max: {param.id === 'presion' ? paramData.max.toFixed(2) : param.id === 'humedad' ? Math.round(paramData.max) : paramData.max.toFixed(1)} {param.unit}
+                                        </div>
+                                    ) : (
+                                        showMinMax && min !== null && max !== null ? (
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                Min: {param.id === 'presion' ? parseFloat(min).toFixed(2) : param.id === 'humedad' ? Math.round(parseFloat(min)) : parseFloat(min).toFixed(1)} {param.unit} | Max: {param.id === 'presion' ? parseFloat(max).toFixed(2) : param.id === 'humedad' ? Math.round(parseFloat(max)) : parseFloat(max).toFixed(1)} {param.unit}
+                                            </div>
+                                        ) : null
+                                    )}
                                 </CardContent>
                             </Card>
                         );
@@ -354,8 +469,45 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Comparativa de extremos mensuales/anuales</CardTitle>
-                            <UiSelect value={extremosVar} onValueChange={setExtremosVar}>
+                            <CardTitle className="text-base">Comparativa entre estaciones (valores actuales)</CardTitle>
+                            <UiSelect value={comparativaVar} onValueChange={setComparativaVar}>
+                                <UiSelectTrigger className="w-[220px] ml-4">
+                                    <UiSelectValue placeholder="Variable" />
+                                </UiSelectTrigger>
+                                <UiSelectContent>
+                                    {comparativaVariables.map(v => (
+                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
+                                    ))}
+                                </UiSelectContent>
+                            </UiSelect>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={getStationComparison()}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                    <YAxis />
+                                    <Tooltip formatter={(value, name, props) => [`${value} ${comparativaVarObj.unit}`, name]} />
+                                    <Legend />
+                                    <Bar dataKey={comparativaVar} name={comparativaVarObj.label} fill={comparativaVarObj.color} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {isGlobal && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-base">Comparativa de mínimos diarios/mensuales/anuales</CardTitle>
+                            <UiSelect value={extremosVarMin} onValueChange={setExtremosVarMin}>
                                 <UiSelectTrigger className="w-[220px] ml-4">
                                     <UiSelectValue placeholder="Variable" />
                                 </UiSelectTrigger>
@@ -368,24 +520,61 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
-                                    data={getExtremosMensualesAnuales(extremosVar)}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    data={getExtremosMinimosDiariosMensualesAnuales(extremosVarMin)}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
+                                    <XAxis dataKey="name" tick={false} axisLine={false} />
                                     <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarObj.unit}`, name]} />
+                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMinObj.unit}`, name]} />
                                     <Legend />
-                                    <Bar dataKey="maxMensual" name="Máx. mensual" fill={extremosVarObj.color1} />
-                                    <Bar dataKey="maxAnual" name="Máx. anual" fill={extremosVarObj.color2} />
+                                    <Bar dataKey="minDiario" name="Mín. diario" fill={extremosVarMinObj.color3} />
+                                    <Bar dataKey="minMensual" name="Mín. mensual" fill={extremosVarMinObj.color1} />
+                                    <Bar dataKey="minAnual" name="Mín. anual" fill={extremosVarMinObj.color2} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-2">
-                            * Pasa el ratón por las barras para ver la fecha del extremo
+                    </CardContent>
+                </Card>
+            )}
+
+            {isGlobal && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-base">Comparativa de máximos diarios/mensuales/anuales</CardTitle>
+                            <UiSelect value={extremosVarMax} onValueChange={setExtremosVarMax}>
+                                <UiSelectTrigger className="w-[220px] ml-4">
+                                    <UiSelectValue placeholder="Variable" />
+                                </UiSelectTrigger>
+                                <UiSelectContent>
+                                    {extremosVariables.map(v => (
+                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
+                                    ))}
+                                </UiSelectContent>
+                            </UiSelect>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={getExtremosMaximosDiariosMensualesAnuales(extremosVarMax)}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                    <YAxis />
+                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMaxObj.unit}`, name]} />
+                                    <Legend />
+                                    <Bar dataKey="maxDiario" name="Máx. diario" fill={extremosVarMaxObj.color3} />
+                                    <Bar dataKey="maxMensual" name="Máx. mensual" fill={extremosVarMaxObj.color1} />
+                                    <Bar dataKey="maxAnual" name="Máx. anual" fill={extremosVarMaxObj.color2} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </CardContent>
                 </Card>
@@ -486,93 +675,6 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                 </Card>
             )}
 
-            {/* --- COMPARATIVA ENTRE ESTACIONES (GLOBAL, UNIFICADO) --- */}
-            {isGlobal && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Comparativa entre Estaciones</CardTitle>
-                            <UiSelect value={comparativaVar} onValueChange={setComparativaVar}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
-                                    <UiSelectValue placeholder="Variable" />
-                                </UiSelectTrigger>
-                                <UiSelectContent>
-                                    {comparativaVariables.map(v => (
-                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
-                                    ))}
-                                </UiSelectContent>
-                            </UiSelect>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={getStationComparison()}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${comparativaVarObj.unit}`, name]} />
-                                    <Legend />
-                                    <Bar dataKey={comparativaVar} name={comparativaVarObj.label} fill={comparativaVarObj.color} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-            {/* --- GRÁFICO DE EVOLUCIÓN ANUAL EN ESTACIÓN CONCRETA --- */}
-            {!isGlobal && selectedStation && selectedStation.anuales && (
-                <div className="grid grid-cols-2 gap-6 mt-6">
-                    {/* Temperatura máxima y mínima anual */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Extremos anuales de temperatura</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-[250px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart
-                                        data={[
-                                            { label: selectedStation.anuales.temperaturamaximadia || '-', value: selectedStation.anuales.temperaturamaxima ? parseFloat(selectedStation.anuales.temperaturamaxima.replace(",", ".")) : null, tipo: 'Máxima' },
-                                            { label: selectedStation.anuales.temperaturaminimadia || '-', value: selectedStation.anuales.temperaturaminima ? parseFloat(selectedStation.anuales.temperaturaminima.replace(",", ".")) : null, tipo: 'Mínima' }
-                                        ]}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="tipo" />
-                                        <YAxis />
-                                        <Tooltip formatter={(value, name, props) => [`${value}°C`, name]} labelFormatter={(label, payload) => {
-                                            if (!payload || !payload[0]) return label;
-                                            return `${label} (${payload[0].payload.label || '-'})`;
-                                        }} />
-                                        <Legend />
-                                        <Bar dataKey="value" name="Temperatura" fill="#E74C3C" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    {/* Racha máxima anual de viento */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Racha máxima anual de viento</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col items-center justify-center h-full">
-                                <div className="text-3xl font-bold">
-                                    {selectedStation.anuales.rachaviento ? parseFloat(selectedStation.anuales.rachaviento.replace(",", ".")).toFixed(1) : '-'} km/h
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Día: {selectedStation.anuales.rachavientodia || '-'}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
             {/* --- CARDS DE PRECIPITACIÓN Y ASTRONOMÍA EN ESTACIÓN CONCRETA --- */}
             {!isGlobal && selectedStation && (
                 <div className="grid grid-cols-2 gap-6 mt-6">
@@ -632,6 +734,57 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                             </ResponsiveContainer>
                         </div>
                         <div className="text-xs text-muted-foreground mt-2">* Basado en la dirección actual o más frecuente</div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* --- NUEVAS GRÁFICAS GLOBALES --- */}
+            {isGlobal && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Comparativa de rachas de viento máximas anuales</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={getRachaMaximaAnual()}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                    <YAxis />
+                                    <Tooltip formatter={(value, name, props) => [`${value} km/h`, name]} />
+                                    <Legend />
+                                    <Bar dataKey="racha" name="Racha máxima anual" fill="#F1C40F" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {isGlobal && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Comparativa de acumulado de lluvia anual</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={getLluviaAcumuladaAnual()}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                    <YAxis />
+                                    <Tooltip formatter={(value, name, props) => [`${value} mm`, name]} />
+                                    <Legend />
+                                    <Bar dataKey="lluvia" name="Lluvia acumulada anual" fill="#2874A6" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
                 </Card>
             )}

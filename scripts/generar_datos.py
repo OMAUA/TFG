@@ -132,7 +132,7 @@ for estacion in estaciones:
         corregir_hora_a_dia(mensuales)
         corregir_hora_a_dia(anuales)
         
-        if fecha is not None and hora is not None and root.find("ns:actuales/ns:velocidadviento", NAMESPACE) is not None:
+        if fecha is not None and hora is not None:
             if es_dato_actualizado(fecha.text, hora.text):
                 datos_estaciones.append({
                     "estacion": estacion["nombre"],
