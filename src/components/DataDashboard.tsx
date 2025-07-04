@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { PieChart, Pie, Cell, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart } from "recharts";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { Select as UiSelect, SelectTrigger as UiSelectTrigger, SelectValue as UiSelectValue, SelectContent as UiSelectContent, SelectItem as UiSelectItem } from "@/components/ui/select";
+import { LegendProps } from 'recharts';
 
 interface DataDashboardProps {
     selectedStationId: string | null;
@@ -348,6 +349,61 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
         }));
     }
 
+    // 1. Datos para gráfico circular de dirección del viento
+    const ALL_DIRECTIONS = [
+        'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+    ];
+    function getWindDirectionPieData() {
+        if (!data) return [];
+        const freq = {};
+        data.datos.forEach(est => {
+            let dir = est.actuales.direccionviento || 'Sin dato';
+            dir = dir.trim(); // Eliminar espacios en blanco
+            freq[dir] = (freq[dir] || 0) + 1;
+        });
+        // Asegurar que todas las direcciones posibles están presentes
+        ALL_DIRECTIONS.forEach(dir => {
+            if (!(dir in freq)) freq[dir] = 0;
+        });
+        // También mostrar "Sin dato" si hay alguna estación sin dirección
+        if (Object.keys(freq).some(d => d === 'Sin dato')) {
+            // ya está incluido
+        }
+        // Filtrar solo las direcciones con valor > 0
+        return Object.entries(freq)
+            .filter(([_, value]) => Number(value) > 0)
+            .map(([direction, value]) => ({ direction, value: Number(value) }));
+    }
+
+    // Añadir funciones auxiliares para formatear hora y día
+    function formatHora(hora: string | undefined): string {
+        if (!hora) return '-';
+        // Si es tipo HH:MM:SS o HH:MM, devolver HH:MM
+        const match = hora.match(/(\d{1,2}):(\d{2})/);
+        if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+        // Si es tipo DD/MM/AAAA HH:MM o DD-MM-AAAA HH:MM o similar
+        const match2 = hora.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})[ T]?(\d{1,2}):(\d{2})/);
+        if (match2) return `${match2[4].padStart(2, '0')}:${match2[5]}`;
+        return hora;
+    }
+
+    function formatDia(dia: string | undefined): string {
+        if (!dia) return '-';
+        // Si es tipo DD mes
+        if (/^\d{1,2} [a-zA-Záéíóúñ]+$/.test(dia)) return dia;
+        // Si es tipo DD/MM/AA HH:MM:SS o DD/MM/AAAA HH:MM:SS
+        const match = dia.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+        if (match) {
+            const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            const mesNum = parseInt(match[2], 10);
+            return `${match[1]} ${meses[mesNum-1]}`;
+        }
+        // Si es tipo DD mes
+        const match2 = dia.match(/(\d{1,2}) ([a-zA-Záéíóúñ]+)/);
+        if (match2) return dia;
+        return dia;
+    }
+
     if (loading) return <div className="p-8 text-center">Cargando datos...</div>;
     if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
     if (!data) return <div className="p-8 text-center">No hay datos disponibles.</div>;
@@ -452,9 +508,9 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                                         </div>
                                     ) : (
                                         showMinMax && min !== null && max !== null ? (
-                                            <div className="text-xs text-muted-foreground mt-1">
+                                    <div className="text-xs text-muted-foreground mt-1">
                                                 Min: {param.id === 'presion' ? parseFloat(min).toFixed(2) : param.id === 'humedad' ? Math.round(parseFloat(min)) : parseFloat(min).toFixed(1)} {param.unit} | Max: {param.id === 'presion' ? parseFloat(max).toFixed(2) : param.id === 'humedad' ? Math.round(parseFloat(max)) : parseFloat(max).toFixed(1)} {param.unit}
-                                            </div>
+                                    </div>
                                         ) : null
                                     )}
                                 </CardContent>
@@ -466,16 +522,18 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
 
             {/* --- GRÁFICO DE EXTREMOS MENSUALES/ANUALES (GLOBAL, UNIFICADO) --- */}
             {isGlobal && (
+                <div className="grid grid-cols-2 gap-6">
+                    {/* Comparativa entre estaciones y Distribución de direcciones del viento */}
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Comparativa entre estaciones (valores actuales)</CardTitle>
-                            <UiSelect value={comparativaVar} onValueChange={setComparativaVar}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
-                                    <UiSelectValue placeholder="Variable" />
+                                <CardTitle className="text-base">Comparativa entre estaciones (valores actuales)</CardTitle>
+                                <UiSelect value={comparativaVar} onValueChange={setComparativaVar}>
+                                    <UiSelectTrigger className="w-[180px] ml-4">
+                                        <UiSelectValue placeholder="Variable"/>
                                 </UiSelectTrigger>
                                 <UiSelectContent>
-                                    {comparativaVariables.map(v => (
+                                        {comparativaVariables.map(v => (
                                         <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
                                     ))}
                                 </UiSelectContent>
@@ -484,35 +542,65 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="130%">
                                 <BarChart
-                                    data={getStationComparison()}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                        data={getStationComparison()}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                        <XAxis dataKey="name" tick={false} axisLine={false} />
                                     <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${comparativaVarObj.unit}`, name]} />
+                                        <Tooltip formatter={(value, name, props) => [`${value} ${comparativaVarObj.unit}`, name]} />
                                     <Legend />
-                                    <Bar dataKey={comparativaVar} name={comparativaVarObj.label} fill={comparativaVarObj.color} />
+                                        <Bar dataKey={comparativaVar} name={comparativaVarObj.label} fill={comparativaVarObj.color} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader>
+                            <CardTitle className="text-base">Distribución de direcciones del viento</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                            <div className="h-[350px] flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={getWindDirectionPieData()}
+                                            dataKey="value"
+                                            nameKey="direction"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={120}
+                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                        >
+                                            {getWindDirectionPieData().map((entry, idx) => (
+                                                <Cell key={`cell-${idx}`} fill={['#2980B9', '#E67E22', '#27AE60', '#8E44AD', '#F1C40F', '#E74C3C', '#1ABC9C', '#34495E', '#95A5A6', '#D35400', '#00B894', '#6C3483', '#F7B731', '#A3CBF5', '#F5CD79', '#E17055', '#00B894'][idx % 17]} />
+                                            ))}
+                                        </Pie>
+                                    <Legend />
+                                    </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+                </div>
             )}
 
             {isGlobal && (
+                <div className="grid grid-cols-2 gap-6 mt-8">
+                    {/* Comparativa de mínimos y máximos diarios/mensuales/anuales */}
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Comparativa de mínimos diarios/mensuales/anuales</CardTitle>
-                            <UiSelect value={extremosVarMin} onValueChange={setExtremosVarMin}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
+                                <CardTitle className="text-base">Comparativa de mínimos diarios/mensuales/anuales</CardTitle>
+                                <UiSelect value={extremosVarMin} onValueChange={setExtremosVarMin}>
+                                    <UiSelectTrigger className="w-[180px] ml-4">
                                     <UiSelectValue placeholder="Variable" />
                                 </UiSelectTrigger>
                                 <UiSelectContent>
-                                    {extremosVariables.map(v => (
+                                        {extremosVariables.map(v => (
                                         <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
                                     ))}
                                 </UiSelectContent>
@@ -520,165 +608,133 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <div className="h-[350px]">
+                                <ResponsiveContainer width="100%" height="115%">
                                 <BarChart
-                                    data={getExtremosMinimosDiariosMensualesAnuales(extremosVarMin)}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                        data={getExtremosMinimosDiariosMensualesAnuales(extremosVarMin)}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={false} axisLine={false} />
+                                        <XAxis dataKey="name" tick={false} axisLine={false} />
                                     <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMinObj.unit}`, name]} />
+                                        <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMinObj.unit}`, name]} />
                                     <Legend />
-                                    <Bar dataKey="minDiario" name="Mín. diario" fill={extremosVarMinObj.color3} />
-                                    <Bar dataKey="minMensual" name="Mín. mensual" fill={extremosVarMinObj.color1} />
-                                    <Bar dataKey="minAnual" name="Mín. anual" fill={extremosVarMinObj.color2} />
+                                        <Bar dataKey="minDiario" name="Mín. diario" fill={extremosVarMinObj.color3} />
+                                        <Bar dataKey="minMensual" name="Mín. mensual" fill={extremosVarMinObj.color1} />
+                                        <Bar dataKey="minAnual" name="Mín. anual" fill={extremosVarMinObj.color2} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                                <CardTitle className="text-base">Comparativa de máximos diarios/mensuales/anuales</CardTitle>
+                                <UiSelect value={extremosVarMax} onValueChange={setExtremosVarMax}>
+                                    <UiSelectTrigger className="w-[180px] ml-4">
+                                    <UiSelectValue placeholder="Variable" />
+                                </UiSelectTrigger>
+                                <UiSelectContent>
+                                        {extremosVariables.map(v => (
+                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
+                                    ))}
+                                </UiSelectContent>
+                            </UiSelect>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                            <div className="h-[350px]">
+                                <ResponsiveContainer width="100%" height="115%">
+                                <BarChart
+                                        data={getExtremosMaximosDiariosMensualesAnuales(extremosVarMax)}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" tick={false} axisLine={false} />
+                                    <YAxis />
+                                        <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMaxObj.unit}`, name]} />
+                                    <Legend />
+                                        <Bar dataKey="maxDiario" name="Máx. diario" fill={extremosVarMaxObj.color3} />
+                                        <Bar dataKey="maxMensual" name="Máx. mensual" fill={extremosVarMaxObj.color1} />
+                                        <Bar dataKey="maxAnual" name="Máx. anual" fill={extremosVarMaxObj.color2} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+                </div>
             )}
 
             {isGlobal && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Comparativa de máximos diarios/mensuales/anuales</CardTitle>
-                            <UiSelect value={extremosVarMax} onValueChange={setExtremosVarMax}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
-                                    <UiSelectValue placeholder="Variable" />
-                                </UiSelectTrigger>
-                                <UiSelectContent>
-                                    {extremosVariables.map(v => (
-                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
-                                    ))}
-                                </UiSelectContent>
-                            </UiSelect>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={getExtremosMaximosDiariosMensualesAnuales(extremosVarMax)}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={false} axisLine={false} />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosVarMaxObj.unit}`, name]} />
-                                    <Legend />
-                                    <Bar dataKey="maxDiario" name="Máx. diario" fill={extremosVarMaxObj.color3} />
-                                    <Bar dataKey="maxMensual" name="Máx. mensual" fill={extremosVarMaxObj.color1} />
-                                    <Bar dataKey="maxAnual" name="Máx. anual" fill={extremosVarMaxObj.color2} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* --- GRÁFICOS DE EVOLUCIÓN MENSUAL EN ESTACIÓN CONCRETA (UNIFICADO) --- */}
-            {!isGlobal && selectedStation && selectedStation.mensuales && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Evolución mensual de extremos</CardTitle>
-                            <UiSelect value={evolucionMensualVar} onValueChange={setEvolucionMensualVar}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
-                                    <UiSelectValue placeholder="Variable" />
-                                </UiSelectTrigger>
-                                <UiSelectContent>
-                                    {evolucionMensualVariables.map(v => (
-                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
-                                    ))}
-                                </UiSelectContent>
-                            </UiSelect>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={[
-                                        {
-                                            label: evolucionMensualVarObj.labelDia && selectedStation.mensuales[evolucionMensualVarObj.labelDia] ? selectedStation.mensuales[evolucionMensualVarObj.labelDia] : 'Este mes',
-                                            value: selectedStation.mensuales[evolucionMensualVarObj.id] ? parseFloat(selectedStation.mensuales[evolucionMensualVarObj.id].replace(",", ".")) : null
-                                        }
-                                    ]}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="label" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${evolucionMensualVarObj.unit}`, name]} />
-                                    <Legend />
-                                    <Bar dataKey="value" name={evolucionMensualVarObj.label} fill={evolucionMensualVarObj.color} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* --- GRÁFICO DE EXTREMOS ANUALES EN ESTACIÓN CONCRETA (UNIFICADO) --- */}
-            {!isGlobal && selectedStation && selectedStation.anuales && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">Extremos anuales</CardTitle>
-                            <UiSelect value={extremosAnualesVar} onValueChange={setExtremosAnualesVar}>
-                                <UiSelectTrigger className="w-[220px] ml-4">
-                                    <UiSelectValue placeholder="Variable" />
-                                </UiSelectTrigger>
-                                <UiSelectContent>
-                                    {extremosAnualesVariables.map(v => (
-                                        <UiSelectItem key={v.id} value={v.id}>{v.label}</UiSelectItem>
-                                    ))}
-                                </UiSelectContent>
-                            </UiSelect>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={[
-                                        extremosAnualesVarObj.max && {
-                                            tipo: 'Máxima',
-                                            label: extremosAnualesVarObj.maxDia && selectedStation.anuales[extremosAnualesVarObj.maxDia] ? selectedStation.anuales[extremosAnualesVarObj.maxDia] : '-',
-                                            value: selectedStation.anuales[extremosAnualesVarObj.max] ? parseFloat(selectedStation.anuales[extremosAnualesVarObj.max].replace(",", ".")) : null
-                                        },
-                                        extremosAnualesVarObj.min && {
-                                            tipo: 'Mínima',
-                                            label: extremosAnualesVarObj.minDia && selectedStation.anuales[extremosAnualesVarObj.minDia] ? selectedStation.anuales[extremosAnualesVarObj.minDia] : '-',
-                                            value: selectedStation.anuales[extremosAnualesVarObj.min] ? parseFloat(selectedStation.anuales[extremosAnualesVarObj.min].replace(",", ".")) : null
-                                        }
-                                    ].filter(Boolean)}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="tipo" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} ${extremosAnualesVarObj.unit}`, name]} labelFormatter={(label, payload) => {
-                                        if (!payload || !payload[0]) return label;
-                                        return `${label} (${payload[0].payload.label || '-'})`;
-                                    }} />
-                                    <Legend />
-                                    <Bar dataKey="value" name={extremosAnualesVarObj.label} fill={extremosAnualesVarObj.color} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="grid grid-cols-2 gap-6 mt-8">
+                    {/* Comparativa de rachas de viento máximas anuales y acumulado de lluvia anual */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Comparativa de rachas de viento máximas anuales</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="118%">
+                                    <BarChart
+                                        data={getRachaMaximaAnual()}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" tick={false} axisLine={false} />
+                                        <YAxis />
+                                        <Tooltip formatter={(value, name, props) => [`${value} km/h`, name]} />
+                                        <Legend />
+                                        <Bar dataKey="racha" name="Racha máxima anual" fill="#F1C40F" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Comparativa de lluvia acumulada anual</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="118%">
+                                    <BarChart
+                                        data={getLluviaAcumuladaAnual()}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" tick={false} axisLine={false} />
+                                        <YAxis />
+                                        <Tooltip formatter={(value, name, props) => [`${value} mm`, name]} />
+                                        <Legend />
+                                        <Bar dataKey="lluvia" name="Lluvia acumulada anual" fill="#2874A6" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             {/* --- CARDS DE PRECIPITACIÓN Y ASTRONOMÍA EN ESTACIÓN CONCRETA --- */}
             {!isGlobal && selectedStation && (
+                <>
+                {/* Fila de 2 tarjetas: Lluvia última hora y Lluvia total anual */}
                 <div className="grid grid-cols-2 gap-6 mt-6">
-                    {/* Lluvia total anual y día de máxima precipitación */}
+                    {/* Lluvia última hora */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Lluvia última hora</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <div className="text-3xl font-bold">
+                                    {selectedStation.actuales?.lluviaultimahora ? parseFloat(selectedStation.actuales.lluviaultimahora.replace(',', '.')).toFixed(1) : '-'} mm
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    {/* Lluvia total anual */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">Lluvia total anual</CardTitle>
@@ -686,107 +742,166 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
                         <CardContent>
                             <div className="flex flex-col items-center justify-center h-full">
                                 <div className="text-3xl font-bold">
-                                    {selectedStation.anuales && selectedStation.anuales.lluvia ? parseFloat(selectedStation.anuales.lluvia.replace(",", ".")).toFixed(1) : '-'} mm
+                                    {selectedStation.anuales && selectedStation.anuales.lluvia ? parseFloat(selectedStation.anuales.lluvia.replace(',', '.')).toFixed(1) : '-'} mm
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                    Día de máxima intensidad: {selectedStation.anuales && selectedStation.anuales.intensidadlluviadia ? selectedStation.anuales.intensidadlluviadia : '-'}
+                                    Día de máxima intensidad: {selectedStation.anuales && selectedStation.anuales.intensidadlluviadia ? formatDia(selectedStation.anuales.intensidadlluviadia) : '-'}
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    {/* Astronomía */}
-                    {selectedStation.astronomia && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Astronomía</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div><span className="font-medium">Salida sol:</span> {selectedStation.astronomia.salidasol || '-'}</div>
-                                    <div><span className="font-medium">Puesta sol:</span> {selectedStation.astronomia.puestasol || '-'}</div>
-                                    <div><span className="font-medium">Salida luna:</span> {selectedStation.astronomia.salidaluna || '-'}</div>
-                                    <div><span className="font-medium">Puesta luna:</span> {selectedStation.astronomia.puestaluna || '-'}</div>
-                                    <div><span className="font-medium">Fase lunar:</span> {selectedStation.astronomia.faselunar || '-'}</div>
-                                    <div><span className="font-medium">Porcentaje luna:</span> {selectedStation.astronomia.porcentajeluna || '-'}</div>
-                                    <div><span className="font-medium">Duración día:</span> {selectedStation.astronomia.duraciondia || '-'}</div>
-                                    <div><span className="font-medium">Edad lunar:</span> {selectedStation.astronomia.edadlunar || '-'}</div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
-            )}
-            {/* --- ROSA DE VIENTOS SIMULADA (ESTACIÓN CONCRETA) --- */}
-            {!isGlobal && (
-                <Card>
+                {/* Tablas de extremos diarios, mensuales y anuales */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                  {/* Diarios */}
+                  <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Rosa de vientos (simulada)</CardTitle>
+                      <CardTitle className="text-base">Extremos diarios</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[250px] flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart data={getWindRoseData()} outerRadius={80}>
-                                    <PolarGrid />
-                                    <PolarAngleAxis dataKey="direction" />
-                                    <PolarRadiusAxis angle={30} domain={[0, 1]} />
-                                    <Radar name="Frecuencia" dataKey="value" stroke="#2980B9" fill="#2980B9" fillOpacity={0.6} />
-                                </RadarChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-2">* Basado en la dirección actual o más frecuente</div>
+                      <table className="min-w-full text-xs border-separate border-spacing-y-1">
+                        <thead>
+                          <tr className="text-muted-foreground">
+                            <th className="text-left font-medium">Parámetro</th>
+                            <th className="text-left font-medium">Mín.</th>
+                            <th className="text-left font-medium">Hora mín.</th>
+                            <th className="text-left font-medium">Máx.</th>
+                            <th className="text-left font-medium">Hora máx.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Temperatura (°C)</td>
+                            <td>{selectedStation.diarios?.temperaturaminima ? parseFloat(selectedStation.diarios.temperaturaminima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.temperaturaminimahora)}</td>
+                            <td>{selectedStation.diarios?.temperaturamaxima ? parseFloat(selectedStation.diarios.temperaturamaxima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.temperaturamaximahora)}</td>
+                          </tr>
+                          <tr>
+                            <td>Humedad (%)</td>
+                            <td>{selectedStation.diarios?.humedadminima ? Math.round(parseFloat(selectedStation.diarios.humedadminima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.humedadminimahora)}</td>
+                            <td>{selectedStation.diarios?.humedadmaxima ? Math.round(parseFloat(selectedStation.diarios.humedadmaxima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.humedadmaximahora)}</td>
+                          </tr>
+                          <tr>
+                            <td>Racha viento (km/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.diarios?.rachaviento ? parseFloat(selectedStation.diarios.rachaviento.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.rachavientohora)}</td>
+                          </tr>
+                          <tr>
+                            <td>Intensidad lluvia (mm/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.diarios?.intensidadlluvia ? parseFloat(selectedStation.diarios.intensidadlluvia.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatHora(selectedStation.diarios?.intensidadlluviahora)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </CardContent>
-                </Card>
-            )}
-
-            {/* --- NUEVAS GRÁFICAS GLOBALES --- */}
-            {isGlobal && (
-                <Card>
+                  </Card>
+                  {/* Mensuales */}
+                  <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Comparativa de rachas de viento máximas anuales</CardTitle>
+                      <CardTitle className="text-base">Extremos mensuales</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={getRachaMaximaAnual()}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={false} axisLine={false} />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} km/h`, name]} />
-                                    <Legend />
-                                    <Bar dataKey="racha" name="Racha máxima anual" fill="#F1C40F" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                      <table className="min-w-full text-xs border-separate border-spacing-y-1">
+                        <thead>
+                          <tr className="text-muted-foreground">
+                            <th className="text-left font-medium">Parámetro</th>
+                            <th className="text-left font-medium">Mín.</th>
+                            <th className="text-left font-medium">Día mín.</th>
+                            <th className="text-left font-medium">Máx.</th>
+                            <th className="text-left font-medium">Día máx.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Temperatura (°C)</td>
+                            <td>{selectedStation.mensuales?.temperaturaminima ? parseFloat(selectedStation.mensuales.temperaturaminima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.temperaturaminimadia)}</td>
+                            <td>{selectedStation.mensuales?.temperaturamaxima ? parseFloat(selectedStation.mensuales.temperaturamaxima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.temperaturamaximadia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Humedad (%)</td>
+                            <td>{selectedStation.mensuales?.humedadminima ? Math.round(parseFloat(selectedStation.mensuales.humedadminima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.humedadminimadia)}</td>
+                            <td>{selectedStation.mensuales?.humedadmaxima ? Math.round(parseFloat(selectedStation.mensuales.humedadmaxima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.humedadmaximadia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Racha viento (km/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.mensuales?.rachaviento ? parseFloat(selectedStation.mensuales.rachaviento.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.rachavientodia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Intensidad lluvia (mm/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.mensuales?.intensidadlluvia ? parseFloat(selectedStation.mensuales.intensidadlluvia.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.mensuales?.intensidadlluviadia)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </CardContent>
-                </Card>
-            )}
-
-            {isGlobal && (
+                  </Card>
+                  {/* Anuales */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Comparativa de acumulado de lluvia anual</CardTitle>
+                      <CardTitle className="text-base">Extremos anuales</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={getLluviaAcumuladaAnual()}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={false} axisLine={false} />
-                                    <YAxis />
-                                    <Tooltip formatter={(value, name, props) => [`${value} mm`, name]} />
-                                    <Legend />
-                                    <Bar dataKey="lluvia" name="Lluvia acumulada anual" fill="#2874A6" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                      <table className="min-w-full text-xs border-separate border-spacing-y-1">
+                        <thead>
+                          <tr className="text-muted-foreground">
+                            <th className="text-left font-medium">Parámetro</th>
+                            <th className="text-left font-medium">Mín.</th>
+                            <th className="text-left font-medium">Día mín.</th>
+                            <th className="text-left font-medium">Máx.</th>
+                            <th className="text-left font-medium">Día máx.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Temperatura (°C)</td>
+                            <td>{selectedStation.anuales?.temperaturaminima ? parseFloat(selectedStation.anuales.temperaturaminima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.temperaturaminimadia)}</td>
+                            <td>{selectedStation.anuales?.temperaturamaxima ? parseFloat(selectedStation.anuales.temperaturamaxima.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.temperaturamaximadia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Humedad (%)</td>
+                            <td>{selectedStation.anuales?.humedadminima ? Math.round(parseFloat(selectedStation.anuales.humedadminima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.humedadminimadia)}</td>
+                            <td>{selectedStation.anuales?.humedadmaxima ? Math.round(parseFloat(selectedStation.anuales.humedadmaxima.replace(',', '.'))) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.humedadmaximadia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Racha viento (km/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.anuales?.rachaviento ? parseFloat(selectedStation.anuales.rachaviento.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.rachavientodia)}</td>
+                          </tr>
+                          <tr>
+                            <td>Intensidad lluvia (mm/h)</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{selectedStation.anuales?.intensidadlluvia ? parseFloat(selectedStation.anuales.intensidadlluvia.replace(',', '.')).toFixed(1) : '-'}</td>
+                            <td>{formatDia(selectedStation.anuales?.intensidadlluviadia)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </CardContent>
                 </Card>
+                </div>
+                </>
             )}
         </div>
     );
