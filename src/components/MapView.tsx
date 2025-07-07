@@ -285,12 +285,17 @@ const MapView = ({ onViewStationDetails }: MapViewProps) => {
     const ultimaActualizacion = data.metadata?.fecha_generacion || new Date().toLocaleString('es-ES');
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Mapa de Estaciones</h2>
-                <span className="text-sm text-muted-foreground">
-                    Última actualización: {ultimaActualizacion}
-                </span>
+        <div className="space-y-6">
+            <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-semibold">Mapa de Estaciones</h2>
+                    <span className="text-sm text-muted-foreground">
+                        Última actualización: {ultimaActualizacion}
+                    </span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    Visualiza la localización de las estaciones meteorológicas de Torrevieja y alrededores. El mapa te permite identificar la distribución geográfica de los datos ambientales y acceder rápidamente a la información actual detallada de cada estación.
+                </div>
             </div>
             <div className="grid grid-cols-4 gap-6">
                 {/* Barra lateral de selección de parámetros */}

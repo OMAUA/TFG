@@ -413,27 +413,36 @@ const DataDashboard = ({ selectedStationId, onStationChange }: DataDashboardProp
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold">Datos Ambientales</h2>
-                <div className="flex gap-4 items-center">
-                    <Select value={currentStationId} onValueChange={handleStationChange}>
-                        <SelectTrigger className="w-[260px]">
-                            <SelectValue placeholder="Estación"/>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="todas">Todas las estaciones</SelectItem>
-                                {data.datos.map((station: EstacionData, idx: number) => (
-                                    <SelectItem key={station.estacion} value={idx.toString()}>
-                                        {station.estacion}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                    <span className="text-sm text-muted-foreground">
-                        Última actualización: {data.metadata?.fecha_generacion || new Date().toLocaleString('es-ES')}
-                    </span>
+            <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-semibold">Datos Ambientales</h2>
+                    <div className="flex gap-4 items-center">
+                        <Select value={currentStationId} onValueChange={handleStationChange}>
+                            <SelectTrigger className="w-[260px]">
+                                <SelectValue placeholder="Estación"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="todas">Todas las estaciones</SelectItem>
+                                    {data.datos.map((station: EstacionData, idx: number) => (
+                                        <SelectItem key={station.estacion} value={idx.toString()}>
+                                            {station.estacion}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground">
+                            Última actualización: {data.metadata?.fecha_generacion || new Date().toLocaleString('es-ES')}
+                        </span>
+                    </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    {currentStationId === 'todas' ? (
+                        'Visualiza el resumen de los datos meteorológicos actuales y los extremos diarios, mensuales y anuales agregados de todas las estaciones disponibles hasta la fecha. Esta vista permite comparar el comportamiento global y detectar tendencias generales en la zona de Torrevieja.'
+                    ) : (
+                        'Consulta los datos meteorológicos actuales y los extremos diarios, mensuales y anuales de la estación seleccionada hasta la fecha. La información se presenta con el formato adecuado y contexto temporal para facilitar la interpretación y el análisis ambiental específico de esa ubicación.'
+                    )}
                 </div>
             </div>
 

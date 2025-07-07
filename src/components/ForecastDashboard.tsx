@@ -89,17 +89,95 @@ const ForecastDashboard = () => {
         }
     };
 
+    // Función para obtener el mensaje de previsión según variable, mes, tendencia y estacionalidad de Torrevieja
+    const getForecastMessage = (variableId: string, tendencia: string | null, actual: number | null, mes: number) => {
+        // Mes: 0=enero, 11=diciembre
+        // Estaciones: Invierno (12,1,2), Primavera (3,4,5), Verano (6,7,8), Otoño (9,10,11)
+        if (variableId === 'temperatura') {
+            if ([11,0,1].includes(mes)) {
+                // Diciembre, enero, febrero
+                if (tendencia === 'subida') return 'Aunque es invierno en Torrevieja, se observa una ligera tendencia al alza en las temperaturas, aunque lo habitual es que se mantengan frescas.';
+                if (tendencia === 'bajada') return 'Las temperaturas siguen descendiendo, acorde a la época invernal en Torrevieja.';
+                return 'Se espera que las temperaturas se mantengan suaves o frescas, típico del invierno en Torrevieja.';
+            }
+            if ([2,3,4].includes(mes)) {
+                // Marzo, abril, mayo
+                if (tendencia === 'subida') return 'Con la llegada de la primavera, las temperaturas tienden a subir progresivamente en la zona.';
+                if (tendencia === 'bajada') return 'A pesar de estar en primavera, se observa un leve descenso de temperaturas.';
+                return 'Las temperaturas suelen ser agradables y en ascenso durante la primavera en Torrevieja.';
+            }
+            if ([5,6,7].includes(mes)) {
+                // Junio, julio, agosto
+                if (tendencia === 'subida') return 'Las temperaturas siguen en ascenso, propio del verano en Torrevieja.';
+                if (tendencia === 'bajada') return 'Se detecta un leve descenso, aunque el verano suele ser muy cálido en la zona.';
+                return 'Se esperan temperaturas elevadas y ambiente seco, característico del verano en Torrevieja.';
+            }
+            if ([8,9,10].includes(mes)) {
+                // Septiembre, octubre, noviembre
+                if (tendencia === 'subida') return 'A pesar de estar en otoño, las temperaturas muestran una tendencia al alza.';
+                if (tendencia === 'bajada') return 'Las temperaturas tienden a descender, propio del otoño en la zona.';
+                return 'En otoño, las temperaturas suelen ir descendiendo progresivamente en Torrevieja.';
+            }
+        }
+        if (variableId === 'lluvia') {
+            if ([5,6,7].includes(mes)) {
+                // Verano
+                if (actual === 0) return 'No se esperan lluvias significativas, ya que el verano en Torrevieja suele ser muy seco.';
+                return 'Se han registrado lluvias poco habituales para la época estival.';
+            }
+            if ([8,9,10].includes(mes)) {
+                // Otoño
+                if (actual === 0) return 'Aunque el otoño es la época más lluviosa en Torrevieja, por ahora no se han registrado precipitaciones.';
+                return 'En otoño pueden producirse episodios de lluvias intensas, habituales en la zona.';
+            }
+            if ([11,0,1].includes(mes)) {
+                // Invierno
+                if (actual === 0) return 'El invierno suele ser seco en Torrevieja, y no se han registrado lluvias recientemente.';
+                return 'Se han registrado lluvias, algo menos frecuente en invierno en la zona.';
+            }
+            if ([2,3,4].includes(mes)) {
+                // Primavera
+                if (actual === 0) return 'La primavera suele ser seca en Torrevieja, sin lluvias destacables.';
+                return 'Se han registrado lluvias, poco habituales en primavera en la zona.';
+            }
+        }
+        if (variableId === 'humedad') {
+            if ([5,6,7].includes(mes)) {
+                // Verano
+                if (tendencia === 'bajada') return 'La humedad relativa podría descender aún más debido al calor y la falta de lluvias.';
+                if (tendencia === 'subida') return 'Se observa un aumento de la humedad, posiblemente por cambios en la brisa marina.';
+                return 'En verano, la humedad suele ser moderada-baja en Torrevieja.';
+            }
+            if ([11,0,1].includes(mes)) {
+                // Invierno
+                if (tendencia === 'bajada') return 'La humedad relativa desciende, aunque el invierno suele ser algo más húmedo en la zona.';
+                if (tendencia === 'subida') return 'Aumenta la humedad, acorde a la mayor presencia de lluvias o nieblas.';
+                return 'En invierno, la humedad suele ser algo más alta en Torrevieja.';
+            }
+            // Primavera y otoño
+            if (tendencia === 'bajada') return 'La humedad muestra una ligera tendencia a la baja.';
+            if (tendencia === 'subida') return 'La humedad muestra una tendencia al alza.';
+            return 'La humedad relativa se mantiene estable, acorde a la época del año.';
+        }
+        if (variableId === 'presion') {
+            if (tendencia === 'bajada') return 'La presión atmosférica muestra una ligera tendencia a la baja, lo que podría indicar cambios meteorológicos.';
+            if (tendencia === 'subida') return 'La presión atmosférica tiende a subir, señal de estabilidad en la atmósfera.';
+            return 'No se esperan grandes cambios en la presión atmosférica en los próximos días.';
+        }
+        return 'No hay previsión disponible para esta variable.';
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-semibold">Comparativa y tendencia de variables ambientales</h2>
+                    <h2 className="text-2xl font-semibold">Previsiones Ambientales</h2>
                     <span className="text-sm text-muted-foreground">
                         Última actualización: {metadata?.fecha_generacion || new Date().toLocaleString('es-ES')}
                     </span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Esta sección compara el valor actual con los valores extremos y medias del mes y del año, y muestra la tendencia reciente según los datos disponibles en el JSON.
+                    Consulta las previsiones ambientales para las principales variables meteorológicas de Torrevieja y alrededores. Esta sección adapta los datos y los mensajes a la época del año actual, la tendencia reciente y los patrones climáticos típicos de la zona, comparando los valores actuales con las medias y extremos mensuales y anuales hasta la fecha para ofrecer una visión contextualizada y realista.
                 </div>
             </div>
             <Tabs value={activeVariable} onValueChange={setActiveVariable} className="space-y-4">
@@ -337,20 +415,7 @@ const ForecastDashboard = () => {
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm">
-                                        {(() => {
-                                            switch (v.id) {
-                                                case 'temperatura':
-                                                    return 'Se espera que la temperatura tienda a subir en los próximos días si persisten las condiciones actuales, especialmente en periodos de mayor insolación.';
-                                                case 'humedad':
-                                                    return 'La humedad relativa podría descender ligeramente si continúan las jornadas soleadas y sin precipitaciones.';
-                                                case 'presion':
-                                                    return 'La presión atmosférica se mantendrá estable salvo la llegada de frentes o cambios meteorológicos significativos.';
-                                                case 'lluvia':
-                                                    return 'No se prevén lluvias significativas a corto plazo salvo cambios en la situación meteorológica. La acumulación anual podría incrementarse si se producen episodios de precipitación.';
-                                                default:
-                                                    return 'No hay previsión disponible para esta variable.';
-                                            }
-                                        })()}
+                                        {getForecastMessage(v.id, tendencia, actual, new Date().getMonth())}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -358,16 +423,6 @@ const ForecastDashboard = () => {
                     );
                 })}
             </Tabs>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Metodología</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm">
-                        Esta comparativa se basa únicamente en los datos actuales, mensuales y anuales disponibles. No se realiza ninguna simulación ni predicción futura, solo comparativas y tendencias reales.
-                    </p>
-                </CardContent>
-            </Card>
         </div>
     );
 };
