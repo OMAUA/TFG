@@ -47,7 +47,7 @@ estaciones = [
     {"nombre": "Aguas Nuevas - Torrevieja", "latitud": "37.998341", "longitud": "-0.664749", "url": "http://www.datos.eltiempoentorrevieja.es/AguasNuevas/aguasnuevas"},
     {"nombre": "La Mata - Parque", "latitud": "38.0240018", "longitud": "-0.6587566", "url": "http://www.datos.eltiempoentorrevieja.es/LaMata_Parque/parquenatural.xml"},
     {"nombre": "Salinas - Torrevieja", "latitud": "37.978448", "longitud": "-0.702041", "url": "http://www.datos.eltiempoentorrevieja.es/Salinas/salinas1"},
-    {"nombre": "Los Montesinos - Montesinos", "latitud": "38.021563", "longitud": "0.741981", "url": "http://www.datos.eltiempoentorrevieja.es/LosMontesinos/montesinos.xml"},
+    {"nombre": "Los Montesinos - Montesinos", "latitud": "38.021563", "longitud": "-0.741981", "url": "http://www.datos.eltiempoentorrevieja.es/LosMontesinos/montesinos.xml"},
     {"nombre": "Los Balcones - Lago Jardin", "latitud": "37.972816", "longitud": "-0.728702", "url": "http://www.datos.eltiempoentorrevieja.es/LosBalcones/balconesjardin"},
     {"nombre": "Romualdo Ballester - Torrevieja", "latitud": "37.955111", "longitud": "-0.717841", "url": "http://www.datos.eltiempoentorrevieja.es/RomualdoBallester/ColegioRomualdo.xml"},
     {"nombre": "IES Torrevigía - Torrevieja", "latitud": "37.998659", "longitud": "-0.695838", "url": "http://www.datos.eltiempoentorrevieja.es/IESTorrevigia/iestorrevigia"},
